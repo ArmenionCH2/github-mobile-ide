@@ -20,16 +20,16 @@ Account tab switching must preserve selected repository, selected branch, editor
 ## GitHub API
 
 - Auth is GitHub fine-grained personal access token for the prototype. Token only in memory; account reconnect required on app restart.
-- Access through Tauri's HTTP client to `https://api.github.com`.
+- Access through custom Rust Tauri commands, pinned to `https://api.github.com`. React never stores a token after connecting.
 - GET repo list, branches, directory contents and files on demand.
-- Contents API reads/writes text files and checks SHA to detect conflicts.
-- Multiple edited files should eventually use Git data (trees/commits/refs) for one atomic commit.
+- Contents API reads UTF-8 text files and checks SHA to detect conflicts.
+- Multiple edited files use Git data (trees/commits/refs) for one atomic commit.
 - Display API failures, 403 rate limits, 409 conflicts; never pretend a commit succeeded.
 - UI uses account token of containing account tab; never share credential across account contexts.
 
 ## Technology
 
-Tauri 2 Android Rust shell; React/TypeScript UI; CodeMirror 6 editor. GitHub REST used directly (no backend). Native HTTPS transport is provided by Tauri HTTP plugin. No remote code execution.
+Tauri 2 Android Rust shell; React/TypeScript UI; CodeMirror 6 editor. GitHub REST used directly (no backend). Native HTTPS transport and session token storage are implemented in Rust via reqwest. No remote code execution.
 
 ## Security boundaries
 

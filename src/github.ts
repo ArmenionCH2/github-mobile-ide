@@ -1,4 +1,4 @@
-import { fetch as nativeFetch } from '@tauri-apps/plugin-http';
+import { invoke } from '@tauri-apps/api/core';
 
 export type Account = { login: string; name?: string | null; avatar_url: string };
 export type Repo = {
@@ -11,46 +11,18 @@ export type Entry = { type: 'file' | 'dir' | 'symlink' | 'submodule'; name: stri
 export type FileContent = { path: string; sha: string; text: string };
 export type Change = { path: string; text: string | null; originalPath?: string; originalSha?: string | null };
 
-const tokens = new Map<string, string>();
-const API = 'https://api.github.com';
-
-function messageFrom(body: unknown): string {
-  if (body && typeof body === 'object' && 'message' in body) return String((body as { message: unknown }).message);
-  return 'Request failed';
-}
-
-async function raw<T>(token: string, method: string, path: string, body?: unknown): Promise<T> {
-  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) throw new Error('Invalid GitHub API path');
-  const response = await nativeFetch(API + path, {
-    method,
-    headers: {
-      'Accept': 'application/vnd.github+json',
-      'Authorization': 'Bearer ' + token,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) })
-  });
-  const payload = await response.text();
-  let data: unknown = null;
-  try { if (payload) data = JSON.parse(payload); } catch { data = payload; }
-  if (!response.ok) throw new Error('GitHub ' + response.status + ': ' + messageFrom(data));
-  return data as T;
-}
-
-export async function addAccount(tokenInput: string): Promise<Account> {
+const tokens = neexport async function addAccount(tokenInput: string): Promise<Account> {
   const token = tokenInput.trim();
   if (!token) throw new Error('Enter a GitHub access token');
-  const account = await raw<Account>(token, 'GET', '/user');
-  tokens.set(account.login, token);
-  return account;
+  return invoke<Account>('connect_account', { token });
 }
-export function removeAccount(login: string): void { tokens.delete(login); }
-export function hasAccount(login: string): boolean { return tokens.has(login); }
+export function removeAccount(login: string): void {
+  void invoke('disconnect_account', { login });
+}
 export function api<T>(login: string, method: string, path: string, body?: unknown): Promise<T> {
-  const token = tokens.get(login);
-  if (!token) throw new Error('Account not connected');
-  return raw<T>(token, method, path, body);
+  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\'))
+    throw new Error('Invalid GitHub API path');
+  return invoke<T>('github_api', { account: login, method, path, body: body ?? null });
 }
 export function repoPath(fullName: string): string {
   const bits = fullName.split('/');

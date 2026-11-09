@@ -1,20 +1,11 @@
 {
-  "$schema": "../gen/schemas/mobile-schema.json",
   "identifier": "main-capability",
-  "description": "GitHub REST access and external URL opening",
+  "description": "GitHub API is mediated by Rust; external links use opener",
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
-    "opener:default",
-    {
-      "identifier": "http:default",
-      "allow": [
-        {
-          "url": "https://api.github.com/*"
-        }
-      ]
-    }
+    "opener:default"
   ]
 }
