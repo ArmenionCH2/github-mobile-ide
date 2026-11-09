@@ -58,6 +58,14 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx tauri icon assets/logo.svg
       - run: npx tauri android init --ci
+      - name: Allow Gradle download retries on new runners
+        run: |
+          prop="src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties"
+          if grep -q '^networkTimeout=' "$prop"; then
+            sed -i 's/^networkTimeout=.*/networkTimeout=120000/' "$prop"
+          else
+            echo 'networkTimeout=120000' >> "$prop"
+          fi
       - name: Build installable debug APK
         run: npx tauri android build --debug --apk --target aarch64 --ci
       - uses: actions/upload-artifact@v4
