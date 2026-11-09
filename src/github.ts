@@ -59,14 +59,26 @@ export function repoPath(fullName: string): string {
 }
 export function filePath(path: string): string { return path.split('/').map(encodeURIComponent).join('/'); }
 export async function repositories(login: string): Promise<Repo[]> {
-  return api<Repo[]>(login, 'GET', '/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100');
+  const all: Repo[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const chunk = await api<Repo[]>(login, 'GET', '/user/repos?affiliation=owner,collaborator,organization_member&sort=updated&per_page=100&page=' + page);
+    all.push(...chunk);
+    if (chunk.length < 100) break;
+  }
+  return all;
 }
 export async function createRepository(login: string, name: string, isPrivate: boolean): Promise<Repo> {
   if (!/^[\w.-]{1,100}$/.test(name)) throw new Error('Use letters, digits, dots, dashes or underscores');
   return api<Repo>(login, 'POST', '/user/repos', { name, private: isPrivate, auto_init: true });
 }
 export async function branches(login: string, repo: string): Promise<Branch[]> {
-  return api<Branch[]>(login, 'GET', repoPath(repo) + '/branches?per_page=100');
+  const all: Branch[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const chunk = await api<Branch[]>(login, 'GET', repoPath(repo) + '/branches?per_page=100&page=' + page);
+    all.push(...chunk);
+    if (chunk.length < 100) break;
+  }
+  return all;
 }
 export async function createBranch(login: string, repo: string, from: string, newName: string): Promise<void> {
   if (!/^[\w./-]+$/.test(newName) || newName.includes('..') || newName.endsWith('/')) throw new Error('Invalid branch name');
