@@ -40,3 +40,17 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Keep this 
 - Android build changed from large debug output to optimized release-mode ARM64 APK with alignment, installation signing and artifact verification.
 - Release signing uses repository secrets if supplied; otherwise a temporary test key (NOT suitable for seamless upgrades).
 - Runtime/install testing on a physical Android device remains unverified.
+
+## Verified release build — November 9, 2026
+
+- GitHub Actions run: https://github.com/ArmenionCH2/github-mobile-ide/actions/runs/42567629602
+- Git commit: `26fd4f2c793b72ab934215cab6522f930b65b73f`
+- Frontend compile: success.
+- ARM64 Tauri/Android release compile: success.
+- Android APK zipalign, signing and `apksigner verify`: success.
+- Generated APK: `GitHub-Mobile-IDE-v0.2.0-arm64-release.apk`
+- Size: 8,288,611 bytes (about 7.9 MiB; 8.29 MB).
+- SHA-256: `540a63a696f1e44f0b151ea5d8267f25b4b05aef3a81437b9f1bbc1c521d7978`
+- APK archive integrity: verified locally.
+- Physical device installation and end-to-end GitHub API interactions: **not tested**.
+- This artifact uses test signing when no persistent GitHub secret is configured. Updating a previous build with a different signing certificate requires uninstalling it first.
