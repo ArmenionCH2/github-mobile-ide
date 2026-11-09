@@ -102,10 +102,12 @@ export async function commitChanges(login: string, repo: string, branch: string,
       const original = change.originalPath || change.path;
       const current = await api<{sha:string}>(login, 'GET', base + '/contents/' + filePath(original) + '?ref=' + encodeURIComponent(branch));
       if (current.sha !== change.originalSha) throw new Error('Conflict: ' + original + ' changed on GitHub. Reload before committing.');
-    } else if (change.text !== null) {
+    }
+    // New files AND renamed destinations must not overwrite an existing path.
+    if (change.text !== null && (!change.originalSha || (change.originalPath && change.originalPath !== change.path))) {
       try {
-        await api(login,'GET',base+'/contents/'+filePath(change.path)+'?ref='+encodeURIComponent(branch));
-        throw new Error('Conflict: file already exists: ' + change.path);
+        await api(login, 'GET', base + '/contents/' + filePath(change.path) + '?ref=' + encodeURIComponent(branch));
+        throw new Error('Conflict: target path already exists: ' + change.path);
       } catch (error) {
         if (!(error instanceof Error) || !error.message.includes('GitHub 404:')) throw error;
       }
