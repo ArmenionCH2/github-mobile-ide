@@ -32,3 +32,11 @@ This document distinguishes implemented source from verified builds. Do not desc
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Keep this status current and avoid placeholders/fake data.
+
+## November 9, 2026: release hardening
+- Workspace tabs now warn before closing when they contain uncommitted changes.
+- Deleting a repository closes its corresponding workspace instead of leaving a stale tab.
+- Repository renames update the owning workspace metadata.
+- Android build changed from large debug output to optimized release-mode ARM64 APK with alignment, installation signing and artifact verification.
+- Release signing uses repository secrets if supplied; otherwise a temporary test key (NOT suitable for seamless upgrades).
+- Runtime/install testing on a physical Android device remains unverified.

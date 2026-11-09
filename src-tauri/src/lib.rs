@@ -15,7 +15,7 @@ struct Account {
 
 fn client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("github-mobile-ide/0.1")
+        .user_agent("github-mobile-ide/0.2")
         .build()
         .map_err(|_| "Could not initialize GitHub network client".to_string())
 }

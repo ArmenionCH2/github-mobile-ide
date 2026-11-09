@@ -1,4 +1,4 @@
-name: Android debug APK
+name: Android optimized release APK
 
 on:
   workflow_dispatch:
@@ -10,13 +10,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: android-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,9 +24,11 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run build
+
   android:
+    needs: frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,9 +41,7 @@ jobs:
       - name: Android SDK and NDK
         run: |
           export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
           test -n "$SDKMANAGER" || { echo "sdkmanager not available"; exit 1; }
           echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
@@ -58,7 +58,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx tauri icon assets/logo.svg
       - run: npx tauri android init --ci
-      - name: Allow Gradle download retries on new runners
+      - name: Prefer direct Gradle distribution and allow slow downloads
         run: |
           prop="src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties"
           if grep -q '^networkTimeout=' "$prop"; then
@@ -67,10 +67,60 @@ jobs:
             echo 'networkTimeout=120000' >> "$prop"
           fi
           sed -i 's#services.gradle.org/distributions#downloads.gradle.org/distributions#' "$prop"
-      - name: Build installable debug APK
-        run: npx tauri android build --debug --apk --target aarch64 --ci
+      - name: Build optimized release APK
+        run: npx tauri android build --apk --target aarch64 --ci
+      - name: Align, sign and verify release APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          build_dir="src-tauri/gen/android/app/build/outputs/apk"
+          mapfile -t candidates < <(find "$build_dir" -type f -name '*.apk' | sort)
+          (("${#candidates[@]}" > 0)) || { echo "No release APK produced"; exit 1; }
+          unsigned=""
+          for apk in "${candidates[@]}"; do
+            if [[ "$apk" == *release* ]] && [[ "$apk" == *unsigned* ]]; then unsigned="$apk"; break; fi
+          done
+          if [[ -z "$unsigned" ]]; then
+            for apk in "${candidates[@]}"; do
+              if [[ "$apk" == *release* ]]; then unsigned="$apk"; break; fi
+            done
+          fi
+          [[ -n "$unsigned" ]] || { printf 'No release APK found; candidates:\n%s\n' "${candidates[*]}"; exit 1; }
+          echo "Found release APK at $unsigned"
+          tools="$ANDROID_HOME/build-tools/35.0.0"
+          aligned="$RUNNER_TEMP/arm64-aligned.apk"
+          keystore="$RUNNER_TEMP/android-release-key.jks"
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" && -n "$ANDROID_KEYSTORE_PASSWORD" && -n "$ANDROID_KEY_ALIAS" && -n "$ANDROID_KEY_PASSWORD" ]]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+            alias="$ANDROID_KEY_ALIAS"
+            storepass="$ANDROID_KEYSTORE_PASSWORD"
+            keypass="$ANDROID_KEY_PASSWORD"
+          elif [[ -z "$ANDROID_KEYSTORE_BASE64" && -z "$ANDROID_KEYSTORE_PASSWORD" && -z "$ANDROID_KEY_ALIAS" && -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "::warning::Using a throwaway APK signing key. Later APKs may require uninstalling this version."
+            alias="github-mobile-ide"
+            storepass="ephemeral-release-build"
+            keypass="$storepass"
+            keytool -genkeypair -noprompt -keystore "$keystore" -storepass "$storepass" -keypass "$keypass" -alias "$alias" -keyalg RSA -keysize 3072 -validity 3650 -dname "CN=GitHub Mobile IDE local test release"
+          else
+            echo "::error::Incomplete signing secret configuration. Provide all four signing secrets or none."
+            exit 1
+          fi
+          "$tools/zipalign" -f -p 4 "$unsigned" "$aligned"
+          mkdir -p release-apk
+          output="release-apk/GitHub-Mobile-IDE-v0.2.0-arm64-release.apk"
+          "$tools/apksigner" sign --ks "$keystore" --ks-key-alias "$alias" --ks-pass "pass:$storepass" --key-pass "pass:$keypass" --out "$output" "$aligned"
+          "$tools/apksigner" verify --verbose "$output"
+          unzip -tqq "$output"
+          sha256sum "$output"
+          du -h "$output"
+          echo "Verified installable release APK: $output"
       - uses: actions/upload-artifact@v4
         with:
-          name: github-mobile-ide-android-arm64-debug
-          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: github-mobile-ide-android-arm64-release
+          path: release-apk/*.apk
           if-no-files-found: error
+          retention-days: 30
