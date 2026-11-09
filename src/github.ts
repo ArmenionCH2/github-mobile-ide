@@ -11,7 +11,7 @@ export type Entry = { type: 'file' | 'dir' | 'symlink' | 'submodule'; name: stri
 export type FileContent = { path: string; sha: string; text: string };
 export type Change = { path: string; text: string | null; originalPath?: string; originalSha?: string | null };
 
-const tokens = neexport async function addAccount(tokenInput: string): Promise<Account> {
+export async function addAccount(tokenInput: string): Promise<Account> {
   const token = tokenInput.trim();
   if (!token) throw new Error('Enter a GitHub access token');
   return invoke<Account>('connect_account', { token });
