@@ -1,21 +1,34 @@
-# Status / truth source
+# Implementation status (2026-11-09)
 
-## In scope for first implementation
+This document distinguishes implemented source from verified builds. Do not describe untested functions as production-ready.
 
-- Tauri 2 / React / TypeScript project and Android debug-build GitHub Actions.
-- Persistent account tabs, nested repo tabs, file tabs.
-- GitHub API account token connection, repository listing, browsing and code editing.
-- Direct file commits via GitHub Contents API with SHA conflict protection.
-- Lightweight GitHub repository view.
-- Account/session state in memory to avoid plaintext credential persistence.
+## Implemented in repository source
 
-## Explicitly not finished / not claimed
+- Rust-powered Tauri 2 Android shell with a React/TypeScript interface and CodeMirror editor.
+- Persistent GitHub account tabs, independent per-account workspace tabs, and per-workspace editor file tabs.
+- GitHub personal-token connections held only in process memory (no plaintext persisted secrets).
+- Listing and navigating accessible repositories; creating repositories.
+- Branch browsing and creation; on-demand directory and UTF-8 text file reads.
+- Creating/editing/renaming/deleting text files as pending changes.
+- Multi-file direct GitHub commits using Git blobs, trees and refs without cloning; source SHA conflict checks and non-forced ref updates.
+- Basic GitHub repository pages, issues, PRs, Actions and repository controls; some advanced screens open the official website.
+- Android debug APK GitHub Actions workflow.
 
-- Full feature parity with GitHub desktop website (security/account settings, all GitHub actions).
-- GitHub OAuth PKCE and OS encrypted credential vault.
-- Offline edits surviving app termination.
-- Full multi-file atomic staging/commit, merge conflict resolution.
-- Android APK verification on real device or build success until CI is green.
-- Web IDE runtime, language servers, terminal, or Codespaces (out of scope).
+## Validation
 
-Always update this file after implementation or validation.
+- GitHub repository files are present and inspectable.
+- Android CI workflow is currently being exercised; a successful Android compilation, install and device smoke test have NOT been recorded here.
+- Do not link or claim an APK until an actual artifact is verified.
+
+## Not yet implemented / known limitations
+
+- Full parity with every GitHub website setting and administrative flow.
+- GitHub OAuth PKCE and secure Android keystore-backed credential persistence. Users currently reconnect tokens after app restart.
+- Background sync, offline durable draft recovery after Android process termination.
+- Git merge/rebase workflows, language servers, terminal, compilation and runtime (out of scope for direct edit).
+- Full conflict resolution UI and automated tests on physical phones.
+- Binary files, Git LFS and very large text files are not supported as editable text.
+
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Keep this status current and avoid placeholders/fake data.
