@@ -94,6 +94,7 @@ export default function App() {
 function AccountWorkspace({account,onDisconnect}: {account:Account;onDisconnect:()=>void}) {
   const [spaces,setSpaces] = useState<Space[]>([{id:'home',title:'Repositories'}]);
   const [activeId,setActiveId] = useState('home');
+  const [dirtySpaces,setDirtySpaces] = useState<Record<string,number>>({});
   function openRepo(repo:Repo) {
     const old = spaces.find(s => s.repo?.full_name === repo.full_name);
     if (old) { setActiveId(old.id); return; }
@@ -101,14 +102,22 @@ function AccountWorkspace({account,onDisconnect}: {account:Account;onDisconnect:
     setSpaces(prev => [...prev,{id,title:repo.name,repo}]); setActiveId(id);
   }
   function closeSpace(id:string) {
+    const dirtyCount = dirtySpaces[id] || 0;
+    if (dirtyCount > 0 && !window.confirm('Close this workspace and discard '+dirtyCount+' uncommitted file change(s)?')) return;
     const remaining=spaces.filter(s=>s.id!==id);
     setSpaces(remaining);
+    setDirtySpaces(prev=>{const next={...prev};delete next[id];return next;});
     if (activeId===id) setActiveId(remaining[remaining.length-1]?.id || 'home');
+  }
+  function deletedSpace(id:string) {
+    setSpaces(prev=>prev.filter(s=>s.id!==id));
+    setDirtySpaces(prev=>{const next={...prev};delete next[id];return next;});
+    setActiveId('home');
   }
   return <>
     <nav className="workspace-tabs" aria-label="Workspaces">
       {spaces.map(s => <div className={'workspace-tab ' + (s.id === activeId ? 'selected' : '')} key={s.id}>
-        <button className="tab-body" onClick={() => setActiveId(s.id)}>{s.repo ? <Folder size={14}/> : <LayoutDashboard size={14}/>}<span>{s.title}</span></button>
+        <button className="tab-body" onClick={() => setActiveId(s.id)}>{s.repo ? <Folder size={14}/> : <LayoutDashboard size={14}/>}<span>{s.title}</span>{(dirtySpaces[s.id]||0)>0&&<i aria-label="Uncommitted workspace changes">●</i>}</button>
         {s.id !== 'home' && <IconButton title={'Close '+s.title} onClick={()=>closeSpace(s.id)}><X size={13}/></IconButton>}
       </div>)}
       <IconButton title="Open repository list" onClick={() => setActiveId('home')}><Plus size={17}/></IconButton>
@@ -116,7 +125,10 @@ function AccountWorkspace({account,onDisconnect}: {account:Account;onDisconnect:
     </nav>
     <div className="workspace-content">
       {spaces.map(s => <div className="workspace-screen" key={s.id} style={{display:s.id===activeId?'flex':'none'}}>
-        {s.repo ? <RepoWorkspace key={s.repo.full_name} account={account.login} repo={s.repo} onRename={name=>setSpaces(prev=>prev.map(w=>w.id===s.id?{...w,title:name,repo:{...w.repo!,name}}:w))}/> :
+        {s.repo ? <RepoWorkspace key={s.id} account={account.login} repo={s.repo}
+            onRename={updated=>setSpaces(prev=>prev.map(w=>w.id===s.id?{...w,title:updated.name,repo:updated}:w))}
+            onDeleted={()=>deletedSpace(s.id)}
+            onDirtyChange={count=>setDirtySpaces(prev=>prev[s.id]===count?prev:{...prev,[s.id]:count})}/> :
           <Dashboard account={account.login} onOpen={openRepo}/>}
       </div>)}
     </div>
@@ -171,7 +183,7 @@ function Dashboard({account,onOpen}: {account:string;onOpen:(r:Repo)=>void}) {
   </section>;
 }
 
-function RepoWorkspace({account,repo,onRename}: {account:string;repo:Repo;onRename:(name:string)=>void}) {
+function RepoWorkspace({account,repo,onRename,onDeleted,onDirtyChange}: {account:string;repo:Repo;onRename:(updated:Repo)=>void;onDeleted:()=>void;onDirtyChange:(count:number)=>void}) {
   const [current,setCurrent] = useState<Repo>(repo);
   const [mode,setMode] = useState<'github'|'ide'>('github');
   const [section,setSection] = useState<Section>('overview');
@@ -196,7 +208,7 @@ function RepoWorkspace({account,repo,onRename}: {account:string;repo:Repo;onRena
     try {await createBranch(account,current.full_name,branch,name);await loadBranches();changeBranch(name);}
     catch(e){setBranchError(fail(e));}
   }
-  function updatedRepo(next:Repo) { setCurrent(next);onRename(next.name); }
+  function updatedRepo(next:Repo) { setCurrent(next);onRename(next); }
   return <>
     <div className="repo-header">
       <div className="repo-headline"><strong>{current.full_name}</strong>{current.private && <LockKeyhole size={14}/>}</div>
@@ -225,11 +237,11 @@ function RepoWorkspace({account,repo,onRename}: {account:string;repo:Repo;onRena
           <div className="button-row"><button className="primary" onClick={()=>setMode('ide')}><Code2 size={17}/> Open IDE</button><button onClick={()=>go(current.html_url)}><ExternalLink size={17}/> GitHub website</button></div>
         </div>}
         {(section==='issues'||section==='pulls'||section==='actions') && <RemoteList account={account} repo={current.full_name} type={section}/>}
-        {section==='settings' && <RepoSettings account={account} repo={current} onUpdate={updatedRepo}/>}
+        {section==='settings' && <RepoSettings account={account} repo={current} onUpdate={updatedRepo} onDeleted={onDeleted}/>} 
       </div>
     </div>
     <div className="repo-mode-screen" style={{display:mode==='ide'?'flex':'none'}}>
-      <Editor key={current.full_name+':'+branch} account={account} repo={current.full_name} branch={branch} onDirty={setDirty}/>
+      <Editor key={current.full_name+':'+branch} account={account} repo={current.full_name} branch={branch} onDirty={count=>{setDirty(count);onDirtyChange(count);}}/>
     </div>
   </>;
 }
@@ -262,7 +274,7 @@ function RemoteList({account,repo,type}: {account:string;repo:string;type:'issue
   </div>;
 }
 
-function RepoSettings({account,repo,onUpdate}:{account:string;repo:Repo;onUpdate:(r:Repo)=>void}) {
+function RepoSettings({account,repo,onUpdate,onDeleted}:{account:string;repo:Repo;onUpdate:(r:Repo)=>void;onDeleted:()=>void}) {
   const [name,setName] = useState(repo.name);
   const [error,setError] = useState('');
   const [busy,setBusy] = useState(false);
@@ -284,7 +296,7 @@ function RepoSettings({account,repo,onUpdate}:{account:string;repo:Repo;onUpdate
     const typed=window.prompt('To permanently delete this repository, enter: '+repo.full_name);
     if(typed!==repo.full_name) return;
     setBusy(true);setError('');
-    try {await api(account,'DELETE',repoPath(repo.full_name));go('https://github.com/'+account+'?tab=repositories');}
+    try {await api(account,'DELETE',repoPath(repo.full_name));onDeleted();}
     catch(e){setError(fail(e));}finally{setBusy(false);}
   }
   return <div className="settings-panel"><h2>Repository settings</h2><p>Administrative actions require GitHub permissions for this repository.</p>
@@ -344,6 +356,10 @@ function Editor({account,repo,branch,onDirty}: {account:string;repo:string;branc
   }
   function deleteFile() {
     if(!active||!window.confirm('Stage deletion of '+active.path+'? Changes will only be published when you commit.'))return;
+    if(active.path!==active.originalPath && active.originalSha){
+      setFiles(prev=>prev.map(f=>f.id===active.id?{...f,path:f.originalPath!,deleted:true}:f));
+      return;
+    }
     if(!active.originalSha){const remaining=files.filter(f=>f.id!==active.id);setFiles(remaining);setCurrentId(remaining[0]?.id||'');}
     else setFiles(prev=>prev.map(f=>f.id===active.id?{...f,deleted:true}:f));
   }
