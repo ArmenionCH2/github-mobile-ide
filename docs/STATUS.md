@@ -64,3 +64,15 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Keep this 
 - Persistent session behavior still needs a physical Android device smoke test.
 - **APK signing:** GitHub Actions uses a temporary signing certificate unless all four persistent signing secrets are set. Apps signed by different keys cannot be installed as in-place updates; existing app data, including saved accounts, may be lost if uninstall is required.
 - Full desktop website parity remains out of scope for this release; many advanced GitHub operations still link to the official site.
+
+## Verified v0.3.0 Android ARM64 build — November 10, 2026
+
+- Source commit: `c4260f6e6a91a4af3624177faec8e755fb5d2fbe`; documentation may have newer commits.
+- Successful CI run: https://github.com/ArmenionCH2/github-mobile-ide/actions/runs/42756455127
+- GitHub artifact: https://github.com/ArmenionCH2/github-mobile-ide/actions/runs/42756455127/artifacts/13735514539
+- Release-mode TypeScript, Rust/Android compilation, zipalign, APK signing and signature verification: **passed**.
+- Actual APK: `GitHub-Mobile-IDE-v0.3.0-arm64-release.apk` — **8,329,571 bytes (8.33 MB)**.
+- Local APK ZIP integrity and downloaded artifact archive: **verified**.
+- APK SHA-256: `8fb2c315aed77565a2129029182d85380e522dae513e9252bcd90e5c09d112b2`.
+- Physical-phone installation, session restoration and GitHub workflow-creation end-to-end testing: **not yet tested**.
+- Until a permanent keystore is configured in GitHub Secrets, the release is test-signed and **cannot upgrade previous APK signatures in place**.
