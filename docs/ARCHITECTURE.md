@@ -2,42 +2,35 @@
 
 ## Product
 
-A GitHub client with a VS Code-style **direct-edit** workspace, NOT a Codespaces runtime. No local clone, build shell, or remote VM.
+Native-shell GitHub client + direct-edit IDE. Not a Codespaces runtime, Git clone, VM, compiler or terminal.
 
-## Permanent root shell
+## Persistent navigation
 
+```text
+Root app shell
+  GitHub account tabs (separate credentials, independent state)
+    Repository navigator
+      All / Owned / Shared and organizations / Pinned / Recent
+    Workspace tabs (each repository)
+      GitHub: overview / issues / PRs / Actions / settings
+      IDE: file explorer / file tabs / staged changes / commits
 ```
-Root Shell (never unmount while switching tabs)
-  Account tabs (one per linked GitHub identity; token scoped per account)
-    Repository/workspace tabs (per account)
-      GitHub view: repository overview, issues, PRs, actions, settings
-      IDE view: file explorer, GitHub REST-backed file edits
-        File tabs (per repo workspace; draft preserved)
-```
 
-Account tab switching must preserve selected repository, selected branch, editor tab, dirty drafts, and scroll where feasible. Tab state is in React memory. Non-secret account labels and layout choices can be stored; no credential storage.
+On Android portrait, the repository navigator is a drawer. Pins and recent names are stored locally as **non-secret metadata**. Open editor drafts remain memory-resident; Android may terminate the process and discard uncommitted edits.
 
-## GitHub API
+## Authentication and API
 
-- Auth is GitHub fine-grained personal access token for the prototype. Token only in memory; account reconnect required on app restart.
-- Access through custom Rust Tauri commands, pinned to `https://api.github.com`. React never stores a token after connecting.
-- GET repo list, branches, directory contents and files on demand.
-- Contents API reads UTF-8 text files and checks SHA to detect conflicts.
-- Multiple edited files use Git data (trees/commits/refs) for one atomic commit.
-- Display API failures, 403 rate limits, 409 conflicts; never pretend a commit succeeded.
-- UI uses account token of containing account tab; never share credential across account contexts.
+- Fine-grained personal access tokens are entered once, then saved through an Android Keystore-backed encrypted credential plugin. On restart the app attempts to reconnect saved accounts. Disconnect deletes the saved record.
+- The React UI briefly holds a token during initial connect or session restoration, but authenticated HTTP requests and live per-account sessions are handled by Rust via reqwest.
+- No plaintext access token in localStorage, preferences or repository.
+- GitHub REST API calls are restricted to the official `api.github.com` endpoint by the Rust command.
+- Contents API serves on-demand UTF-8 reads. GitHub Git Data API commits staged files using blobs/trees/commits/refs. Source SHA conflict checks and non-force ref updates prevent silent overwrites.
+- Workflows are actual `.github/workflows/*.yml` commits, not local simulations. GitHub decides permissions, execution and runner charges.
 
-## Technology
+## Limitations
 
-Tauri 2 Android Rust shell; React/TypeScript UI; CodeMirror 6 editor. GitHub REST used directly (no backend). Native HTTPS transport and session token storage are implemented in Rust via reqwest. No remote code execution.
+No OAuth browser login yet; no offline durable drafts, binary/LFS editor, language server, Codespaces, terminal or comprehensive GitHub desktop parity. A valid APK build does not prove device compatibility.
 
-## Security boundaries
+## Signing
 
-- Personal tokens are RAM only, never serialized to localStorage or repo content.
-- Use least-privileged fine-grained tokens; account switching cannot bleed authorization.
-- Protected branches, permission denials and SSO requirements respected by API.
-- Android secure vault and OAuth PKCE are later milestones, not yet implemented.
-
-## Performance
-
-Only open file content fetched; directories lazy loaded; no clone. Memory drafts should be bounded eventually. On mobile, repository navigation collapses to a drawer; root tabs remain present.
+Release updates need a permanent signing identity. Default throwaway CI signing is **incompatible with in-place updates** and can remove saved sessions if uninstalling is necessary. See [RELEASE.md](RELEASE.md).

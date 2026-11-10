@@ -1,38 +1,35 @@
 # GitHub Mobile IDE
 
-Android-first GitHub management client and direct-edit IDE.
+An Android-first GitHub repository manager with a VS Code-like **direct editor**. It does not clone repositories or run Codespaces.
 
-**Status:** first implementation in progress. Not a complete GitHub desktop replacement or a verified APK yet.
+## How the app is organized
 
-## Product principles
+- **Account tabs** switch between GitHub identities, independently retaining their workspaces.
+- **Repository navigator** separates All, Owned, Shared/Organizations, Pinned and Recent rather than mixing every repository into one unstructured list. Its sidebar is a drawer in portrait.
+- **Workspace tabs** preserve separate repository views.
+- **IDE file tabs** keep multiple editable files open per repository and commit directly to GitHub.
 
-- One persistent app shell with independent account tabs.
-- Every account can keep multiple repository/workspace tabs.
-- Every repository IDE can keep multiple open file tabs.
-- GitHub operations use the official REST API; editing does **not** clone or download entire repositories.
-- No Codespaces, server, terminal, or code execution required.
-- Explicit GitHub account and branch shown before any write.
+The GitHub mode includes basic repository administration, issues/PR browsing and Actions. The **Actions** screen can create an initial workflow file using editable starter templates and request manual workflow runs. Advanced features not yet supported by the native screens still need github.com.
 
-## Build
+## Accounts and security
 
-The project uses React, TypeScript, Tauri 2, and a Rust Android shell.
+Connect with a GitHub fine-grained personal access token. The token is kept in Rust process memory during requests and saved encrypted using device-backed secure credential storage, so the app can try restoring it after restart. Account disconnect deletes its saved credential. Tokens are **not** stored in browser localStorage. An invalid or expired token must be reauthorized. For workflow setup, grant Workflows (write); for manual dispatch, Actions (write). Grant only needed repositories and permissions.
+
+The app does not yet implement GitHub OAuth browser sign-in, complete GitHub website feature parity, or tested conflict resolution on a physical phone.
+
+## Building
+
+React, TypeScript, CodeMirror 6, Tauri 2, Rust/reqwest, Android.
 
 ```bash
 npm install
-npm run dev
 npm run build
-npm run tauri android init -- --ci
-npm run tauri android build -- --apk
+npx tauri android init --ci
+npx tauri android build --apk --target aarch64 --ci
 ```
 
-Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/STATUS.md](docs/STATUS.md) and [AGENTS.md](AGENTS.md) for precise scope.
+See [architecture](docs/ARCHITECTURE.md), [status](docs/STATUS.md), [release signing](docs/RELEASE.md), and [AGENTS.md](AGENTS.md).
 
-**Security:** first release uses personal access tokens held in memory during the session, not stored on disk. Use fine-grained, least-privilege tokens; never commit secrets. Proper multi-account OAuth and Android-backed secure token storage remain future work.
+## APK release signing warning
 
-## Release APK (Android ARM64)
-
-GitHub Actions builds `v0.2.0` in **release mode**, strips Rust symbols, aligns the APK, and signs it for installation. Download the APK from the `github-mobile-ide-android-arm64-release` Actions artifact.
-
-**Signing key warning:** To create an APK that can be updated without uninstalling, configure the four repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. With no secrets the workflow uses a *new throwaway signing key on each build*. Such APKs are installable test releases, but cannot update one another without uninstalling the previous version. Never commit signing keys to this repository.
-
-An optimized APK is **not** evidence of production readiness. GitHub OAuth login, real Android hardware testing, and broader GitHub desktop feature parity remain unfinished.
+The GitHub Actions workflow produces an optimized ARM64 release-mode APK. For **install-over-existing updates** and preserved account sessions, set all four persistent signing secrets described in [docs/RELEASE.md](docs/RELEASE.md). Without them, every build uses a throwaway signing key, requiring uninstall between builds and potentially losing stored accounts and drafts. Do not commit signing keys.
