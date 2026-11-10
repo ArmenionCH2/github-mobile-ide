@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { AlertCircle, CheckCircle2, ExternalLink, Play, Plus, RefreshCw, X } from 'lucide-react';
 import { api, repoPath } from '../github';
 
@@ -36,6 +37,10 @@ export default function ActionsPanel({ account, repo, branch, onOpenIDE }: Props
   const [target, setTarget] = useState(branch);
   const base = repoPath(repo);
 
+  function openGitHub(url: string) {
+    if (!/^https:\/\/github\.com\//.test(url)) { setError('Invalid GitHub link'); return; }
+    void openUrl(url).catch(e => setError(String(e)));
+  }
   async function reload() {
     setBusy(true); setError('');
     try {
@@ -104,10 +109,10 @@ export default function ActionsPanel({ account, repo, branch, onOpenIDE }: Props
       {workflows.map(w => <div className="workflow-item" key={w.id}>
         <div><strong>{w.name}</strong><small>{w.path} · {w.state}</small></div>
         <button disabled={busy || w.state !== 'active'} onClick={() => void dispatch(w)}><Play size={14}/> Run</button>
-        <button aria-label={'View ' + w.name + ' on GitHub'} onClick={() => window.open(w.html_url, '_blank', 'noopener')}><ExternalLink size={15}/></button>
+        <button aria-label={'View ' + w.name + ' on GitHub'} onClick={() => openGitHub(w.html_url)}><ExternalLink size={15}/></button>
       </div>)}</>}
     {runs.length > 0 && <><h3 className="subsection-title">Recent runs</h3>{runs.map(run => <button className="remote-item" key={run.id}
-      onClick={() => window.open(run.html_url, '_blank', 'noopener')}>
+      onClick={() => openGitHub(run.html_url)}>
         <span>{run.display_title || run.name}</span><small>{run.conclusion || run.status}</small><ExternalLink size={14}/></button>)}</>}
     {editing && <div className="dialog-shade"><div className="dialog workflow-dialog" role="dialog" aria-modal="true" aria-label="Create a workflow">
       <div className="dialog-heading"><h2>Create workflow</h2><button className="icon-btn" aria-label="Close" onClick={() => setEditing(false)}><X size={16}/></button></div>

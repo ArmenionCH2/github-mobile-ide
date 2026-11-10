@@ -54,3 +54,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [AGENTS.md](../AGENTS.md). Keep this 
 - APK archive integrity: verified locally.
 - Physical device installation and end-to-end GitHub API interactions: **not tested**.
 - This artifact uses test signing when no persistent GitHub secret is configured. Updating a previous build with a different signing certificate requires uninstalling it first.
+
+## November 10, 2026 — navigation, accounts, and Actions
+
+- Repository dashboard is separated into an account-scoped sidebar with All, Owned, Shared/Organizations, Pinned, and Recent sections. Pins and recents store non-secret repository names only.
+- Personal access tokens are stored encrypted with Android Keystore-backed secure storage instead of plaintext localStorage, and the app restores valid sessions on launch.
+- The Actions page can create actual workflows from editable starter templates when none exist; workflow creation requires GitHub Workflows (write) permission. Existing workflows show run controls for manual dispatch (requires workflow_dispatch).
+- OAuth browser authorization is not yet implemented. Users initially authorize using a fine-grained GitHub token.
+- Persistent session behavior still needs a physical Android device smoke test.
+- **APK signing:** GitHub Actions uses a temporary signing certificate unless all four persistent signing secrets are set. Apps signed by different keys cannot be installed as in-place updates; existing app data, including saved accounts, may be lost if uninstall is required.
+- Full desktop website parity remains out of scope for this release; many advanced GitHub operations still link to the official site.
