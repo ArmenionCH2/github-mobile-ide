@@ -8,13 +8,15 @@ import {
   Github, Plus, X, Folder, FileCode2, GitBranch, Code2, LayoutDashboard,
   RefreshCw, GitCommitHorizontal, Trash2, PencilLine, ChevronLeft, Menu,
   GitPullRequest, CircleDot, Play, Settings2, ExternalLink, LogOut, LockKeyhole,
-  FilePlus2, AlertCircle, Check
+  FilePlus2, AlertCircle, Check, Pin, History, Users, Building2, ListFilter
 } from 'lucide-react';
 import {
   Account, Repo, Branch, Entry, Change, api, addAccount, removeAccount,
   repositories, createRepository, branches, createBranch, directory, readFile,
   commitChanges, repoPath
 } from './github';
+import ActionsPanel from './components/ActionsPanel';
+import { loadSavedAccounts, saveAccount, forgetAccount } from './vault';
 
 type Space = { id: string; title: string; repo?: Repo };
 type FileDraft = { id: string; path: string; originalPath?: string; originalSha?: string; text: string; base: string; deleted: boolean };
@@ -34,22 +36,50 @@ function IconButton({children, title, onClick, disabled}: {children: React.React
 export default function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [active, setActive] = useState('');
-  const [showConnect, setShowConnect] = useState(true);
+  const [showConnect, setShowConnect] = useState(false);
+  const [restoring, setRestoring] = useState(true);
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    async function restore() {
+      try {
+        const saved = await loadSavedAccounts();
+        const recovered: Account[] = [];
+        const failures: string[] = [];
+        for (const item of saved) {
+          try { recovered.push(await addAccount(item.token)); }
+          catch { failures.push(item.login); }
+        }
+        if (cancelled) return;
+        setAccounts(recovered);
+        setActive(recovered[0]?.login || '');
+        if (failures.length) setError('Reconnect these accounts: ' + failures.join(', ') + '. Their stored tokens may have expired or lost access.');
+        if (!recovered.length) setShowConnect(true);
+      } catch (e) {
+        if (!cancelled) { setError('Could not load securely stored accounts: ' + fail(e)); setShowConnect(true); }
+      } finally { if (!cancelled) setRestoring(false); }
+    }
+    void restore();
+    return () => { cancelled = true; };
+  }, []);
 
   async function connect() {
     setBusy(true); setError('');
     try {
       const account = await addAccount(token);
+      await saveAccount(account.login, token.trim());
       setAccounts(prev => prev.some(a => a.login === account.login) ? prev : [...prev, account]);
       setActive(account.login); setToken(''); setShowConnect(false);
     } catch(e) { setError(fail(e)); }
     finally { setBusy(false); }
   }
-  function signOut(login: string) {
-    if (!window.confirm('Disconnect ' + login + '? Unsaved drafts in its workspace will be lost.')) return;
+  async function signOut(login: string) {
+    if (!window.confirm('Disconnect ' + login + '? Unsaved drafts in its workspace will be lost, and the saved login will be forgotten.')) return;
+    try { await forgetAccount(login); }
+    catch (e) { window.alert('Could not remove saved credentials: ' + fail(e)); return; }
     removeAccount(login);
     const remaining = accounts.filter(a => a.login !== login);
     setAccounts(remaining);
@@ -69,7 +99,8 @@ export default function App() {
       </div>
     </header>
     <main className="app-body">
-      {accounts.length === 0 && <div className="welcome"><Github size={42}/><h1>GitHub, with a real code editor.</h1>
+      {restoring && <div className="welcome"><p>Restoring your saved GitHub accounts securely…</p></div>}
+      {!restoring && accounts.length === 0 && <div className="welcome"><Github size={42}/><h1>GitHub, with a real code editor.</h1>
         <p>Manage your repositories and edit directly on GitHub, without cloning or Codespaces.</p>
         <button className="primary" onClick={() => setShowConnect(true)}>Connect GitHub account</button></div>}
       {accounts.map(a => <div key={a.login} className="account-screen" style={{display:active === a.login ? 'flex' : 'none'}}>
@@ -79,7 +110,7 @@ export default function App() {
     {showConnect && <div className="dialog-shade" role="presentation">
       <form className="dialog" onSubmit={e => {e.preventDefault();void connect();}}>
         <div className="dialog-heading"><h2>Connect GitHub account</h2>{accounts.length > 0 && <IconButton title="Close" onClick={() => setShowConnect(false)}><X size={18}/></IconButton>}</div>
-        <p>Paste a GitHub personal access token. It stays in app memory for this session and is never saved to the repository or browser storage.</p>
+        <p>Paste a fine-grained GitHub token once. The app encrypts it using the device's secure credential store to restore your account on future launches.</p>
         <label>GitHub access token</label>
         <input type="password" autoComplete="off" autoCapitalize="none" spellCheck={false} value={token} placeholder="github_pat_... or ghp_..." onChange={e => setToken(e.target.value)}/>
         <button type="button" className="link-button" onClick={() => go('https://github.com/settings/personal-access-tokens')}><ExternalLink size={14}/> Create a fine-grained token on GitHub</button>
@@ -236,7 +267,8 @@ function RepoWorkspace({account,repo,onRename,onDeleted,onDirtyChange}: {account
           <div className="facts"><span>{current.private?'Private':'Public'}</span><span>{current.archived?'Archived':'Active'}</span><span>Branch: {branch}</span></div>
           <div className="button-row"><button className="primary" onClick={()=>setMode('ide')}><Code2 size={17}/> Open IDE</button><button onClick={()=>go(current.html_url)}><ExternalLink size={17}/> GitHub website</button></div>
         </div>}
-        {(section==='issues'||section==='pulls'||section==='actions') && <RemoteList account={account} repo={current.full_name} type={section}/>}
+        {(section==='issues'||section==='pulls') && <RemoteList account={account} repo={current.full_name} type={section}/>}
+        {section==='actions' && <ActionsPanel account={account} repo={current.full_name} branch={branch} onOpenIDE={() => setMode('ide')}/>}
         {section==='settings' && <RepoSettings account={account} repo={current} onUpdate={updatedRepo} onDeleted={onDeleted}/>} 
       </div>
     </div>

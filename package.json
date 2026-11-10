@@ -1,7 +1,7 @@
 {
   "name": "github-mobile-ide",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,7 +19,8 @@
     "@codemirror/theme-one-dark": "^6.1.0",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tauri-plugin-secure-keystore": "0.0.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

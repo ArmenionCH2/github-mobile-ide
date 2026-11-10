@@ -15,7 +15,7 @@ struct Account {
 
 fn client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("github-mobile-ide/0.2")
+        .user_agent("github-mobile-ide/0.3")
         .build()
         .map_err(|_| "Could not initialize GitHub network client".to_string())
 }
@@ -97,6 +97,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(Sessions::default())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_secure_keystore::init())
         .invoke_handler(tauri::generate_handler![connect_account, disconnect_account, github_api])
         .run(tauri::generate_context!())
         .expect("Unable to start GitHub Mobile IDE");
