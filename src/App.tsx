@@ -8,7 +8,7 @@ import {
   Github, Plus, X, Folder, FileCode2, GitBranch, Code2, LayoutDashboard,
   RefreshCw, GitCommitHorizontal, Trash2, PencilLine, ChevronLeft, Menu,
   GitPullRequest, CircleDot, Play, Settings2, ExternalLink, LogOut, LockKeyhole,
-  FilePlus2, AlertCircle, Check, Pin, History, Users, Building2, ListFilter
+  FilePlus2, AlertCircle, Check
 } from 'lucide-react';
 import {
   Account, Repo, Branch, Entry, Change, api, addAccount, removeAccount,
@@ -16,6 +16,7 @@ import {
   commitChanges, repoPath
 } from './github';
 import ActionsPanel from './components/ActionsPanel';
+import RepositoryNavigator from './components/RepositoryNavigator';
 import { loadSavedAccounts, saveAccount, forgetAccount } from './vault';
 
 type Space = { id: string; title: string; repo?: Repo };
@@ -170,7 +171,6 @@ function Dashboard({account,onOpen}: {account:string;onOpen:(r:Repo)=>void}) {
   const [items,setItems] = useState<Repo[]>([]);
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState('');
-  const [filter,setFilter] = useState('');
   const [create,setCreate] = useState(false);
   const [name,setName] = useState('');
   const [privateRepo,setPrivateRepo] = useState(true);
@@ -189,21 +189,13 @@ function Dashboard({account,onOpen}: {account:string;onOpen:(r:Repo)=>void}) {
     } catch(e){setError(fail(e));}
     finally {setSaving(false);}
   }
-  const filtered=items.filter(i=>(i.full_name+' '+(i.description||'')).toLowerCase().includes(filter.toLowerCase()));
   return <section className="dashboard">
     <div className="page-title"><div><h1>Repositories</h1><p>{account} · Available repositories</p></div>
       <div className="toolbar"><IconButton title="Refresh repositories" onClick={()=>void reload()} disabled={loading}><RefreshCw size={17}/></IconButton><button className="primary" onClick={()=>setCreate(true)}><Plus size={16}/> New</button></div>
     </div>
-    <input aria-label="Filter repositories" className="search" placeholder="Filter repositories…" value={filter} onChange={e=>setFilter(e.target.value)}/>
     {error && <p className="error"><AlertCircle size={16}/>{error}</p>}
     {loading && <p className="muted">Loading repositories…</p>}
-    {!loading && <div className="repo-list">{filtered.map(repo=><button key={repo.id} className="repo-item" onClick={()=>onOpen(repo)}>
-      <div><strong>{repo.full_name}</strong>{repo.private && <LockKeyhole size={14}/>}</div>
-      {repo.description && <p>{repo.description}</p>}
-      <small>{repo.archived?'Archived · ':''}Default branch: {repo.default_branch}</small>
-    </button>)}
-    {!filtered.length && !error && <p className="empty">No matching repositories. You can create a new one.</p>}
-    </div>}
+    {!loading && <RepositoryNavigator account={account} repos={items} onOpen={onOpen}/>}
     {create && <div className="dialog-shade"><form className="dialog" onSubmit={e=>{e.preventDefault();void createNew();}}>
       <div className="dialog-heading"><h2>Create repository</h2><IconButton title="Cancel" onClick={()=>setCreate(false)}><X size={17}/></IconButton></div>
       <label>Repository name</label><input required value={name} onChange={e=>setName(e.target.value)} placeholder="new-project"/>
