@@ -6,6 +6,15 @@
 - Create, open, rename and remove named collections, and add or remove accessible repositories using a searchable picker. Collections persist on the current device, independently per GitHub account. They do not create or change GitHub Projects or remote repositories.
 - Stable repository IDs keep membership attached across renames. Missing repositories remain listed and can be removed from the collection.
 
+### Verified v0.4.0 Android ARM64 release
+
+- Source commit: `d58e333148ddb3daf4b7910a1c9ebf84970e0dd9`.
+- [Successful GitHub Actions run](https://github.com/ArmenionCH2/github-mobile-ide/actions/runs/43421366688) and [release APK artifact](https://github.com/ArmenionCH2/github-mobile-ide/actions/runs/43421366688/artifacts/14034672254).
+- Tests, TypeScript build, Android release compile, alignment, signing and APK signature verification passed.
+- Downloaded artifact and APK ZIP integrity verified. `GitHub-Mobile-IDE-v0.4.0-arm64-release.apk` is 8,329,571 bytes and contains only the ARM64 native library. SHA-256: `428d5cdaf959604283e73d5cd4387fe2f10d0c2535d5b27143b6ac254d8b57f1`.
+- Chromium smoke-tested Projects on phone-sized and desktop viewports with stubbed Tauri/GitHub responses. Physical Android installation and real-device interaction were not tested.
+- This run used an ephemeral signing key and cannot update an APK signed by another certificate in place.
+
 ## Initial implementation (November 9, 2026)
 
 This document distinguishes implemented source from verified builds. Do not describe untested functions as production-ready.
