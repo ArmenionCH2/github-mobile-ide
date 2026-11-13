@@ -10,13 +10,14 @@ Native-shell GitHub client + direct-edit IDE. Not a Codespaces runtime, Git clon
 Root app shell
   GitHub account tabs (separate credentials, independent state)
     Repository navigator
+      Projects (local named collections)
       All / Owned / Shared and organizations / Pinned / Recent
     Workspace tabs (each repository)
       GitHub: overview / issues / PRs / Actions / settings
       IDE: file explorer / file tabs / staged changes / commits
 ```
 
-On Android portrait, the repository navigator is a drawer. Pins and recent names are stored locally as **non-secret metadata**. Open editor drafts remain memory-resident; Android may terminate the process and discard uncommitted edits.
+On Android portrait, the repository navigator is a drawer. Projects, pins and recent names are stored locally as **non-secret metadata** scoped to a GitHub account. Project members use stable GitHub repository IDs, so renames and transfers within the account’s access do not break membership. Temporarily unavailable members are preserved without opening another account’s repository or dropping it from the collection. Open editor drafts remain memory-resident; Android may terminate the process and discard uncommitted edits.
 
 ## Authentication and API
 

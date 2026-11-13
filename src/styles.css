@@ -37,3 +37,35 @@
 .actions-page .workflow-yaml{width:100%;min-height:220px;resize:vertical;background:#0d1117;color:#e6edf3;border:1px solid #30363d;padding:12px;border-radius:7px;font-family:ui-monospace,Consolas,monospace;font-size:12px}
 .actions-page .workflow-dialog{max-width:650px}
 @media(max-width:700px){.repository-navigator{min-height:360px}.repo-nav-sidebar{position:fixed;z-index:61;left:0;top:0;bottom:0;width:min(310px,85vw);transform:translateX(-110%);transition:transform .17s ease;box-shadow:10px 0 25px #0006}.repo-nav-sidebar.open{transform:translateX(0)}.repo-nav-title .nav-close{display:inline-flex}.repo-nav-backdrop{display:block;position:fixed;inset:0;z-index:60;background:#0009;border:0;border-radius:0}.repo-nav-toggle{display:inline-flex}.repo-nav-main{padding:9px}.repo-nav-open{padding:10px}.repo-nav-heading h2{font-size:14px}}
+
+/* Local project collections, independent of repository workspaces. */
+.repo-nav-heading h2{min-width:0;overflow-wrap:anywhere}
+.project-action{flex:none;min-height:36px;padding:6px 9px;font-size:12px;white-space:nowrap}
+.projects-mobile-link{display:none}
+.project-card{width:100%;min-height:48px;padding:10px 12px;justify-content:flex-start;text-align:left;background:#161b22}
+.project-card svg{flex:none;color:#58a6ff}
+.project-card strong{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px}
+.project-card small,.project-unavailable small,.project-picker-heading span,.project-picker-option small{font-size:11px;color:#8b949e}
+.project-unavailable{display:flex;flex-direction:column;gap:5px;padding:10px 12px;font-size:13px;overflow-wrap:anywhere}
+dialog.project-editor:not([open]){display:none}
+dialog.project-editor{width:min(480px,calc(100% - 24px));max-height:calc(100dvh - 24px);margin:auto;overflow:auto;color:#e6edf3}
+dialog.project-editor::backdrop{background:#000a}
+.project-editor form{display:flex;flex-direction:column;gap:7px}
+.project-editor form>label[for]{margin-bottom:0}
+.project-editor form>p{margin:5px 0}
+.project-picker-heading{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px}
+.project-picker{overflow:auto;max-height:min(34dvh,275px);min-height:44px;border:1px solid #30363d;border-radius:7px}
+.project-picker-option{display:flex;align-items:center;gap:10px;min-height:42px;padding:6px 10px;margin:0;border-bottom:1px solid #21262d;font-size:12px;cursor:pointer}
+.project-picker-option span{overflow-wrap:anywhere}
+.project-picker-option input{width:17px;height:17px;flex:none;accent-color:#238636}
+.project-picker-option small{display:block}
+.project-picker>p{padding:0 10px}
+.project-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px}
+.project-editor-actions button:last-child{margin-left:auto}
+.project-delete{color:#ff9492;border-color:#8b3938}
+@media(max-width:700px){
+  .projects-mobile-link{display:inline-flex}
+  .repo-nav-sidebar:not(.open){visibility:hidden}
+  .repo-nav-heading{gap:6px}
+  .repo-nav-heading .repo-nav-toggle{min-width:28px}
+}

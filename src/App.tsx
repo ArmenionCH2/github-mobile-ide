@@ -195,7 +195,7 @@ function Dashboard({account,onOpen}: {account:string;onOpen:(r:Repo)=>void}) {
     </div>
     {error && <p className="error"><AlertCircle size={16}/>{error}</p>}
     {loading && <p className="muted">Loading repositories…</p>}
-    {!loading && <RepositoryNavigator account={account} repos={items} onOpen={onOpen}/>}
+    <RepositoryNavigator key={account} account={account} repos={items} onOpen={onOpen}/>
     {create && <div className="dialog-shade"><form className="dialog" onSubmit={e=>{e.preventDefault();void createNew();}}>
       <div className="dialog-heading"><h2>Create repository</h2><IconButton title="Cancel" onClick={()=>setCreate(false)}><X size={17}/></IconButton></div>
       <label>Repository name</label><input required value={name} onChange={e=>setName(e.target.value)} placeholder="new-project"/>

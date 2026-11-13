@@ -6,6 +6,7 @@ An Android-first GitHub repository manager with a VS Code-like **direct editor**
 
 - **Account tabs** switch between GitHub identities, independently retaining their workspaces.
 - **Repository navigator** separates All, Owned, Shared/Organizations, Pinned and Recent rather than mixing every repository into one unstructured list. Its sidebar is a drawer in portrait.
+- **Projects** are named collections you make inside the repository navigator. Create one, select related repositories (including repositories from different owners and organizations accessible to that account), then open it to see only its members. Edit the name or membership at any time. Removing a project never deletes repositories. Collections are stored on the device, separately for each connected account, and are not GitHub Projects boards.
 - **Workspace tabs** preserve separate repository views.
 - **IDE file tabs** keep multiple editable files open per repository and commit directly to GitHub.
 

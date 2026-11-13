@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - run: npm test
       - run: npm run build
 
   android:
@@ -111,7 +112,8 @@ jobs:
           fi
           "$tools/zipalign" -f -p 4 "$unsigned" "$aligned"
           mkdir -p release-apk
-          output="release-apk/GitHub-Mobile-IDE-v0.3.0-arm64-release.apk"
+          version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          output="release-apk/GitHub-Mobile-IDE-v${version}-arm64-release.apk"
           "$tools/apksigner" sign --ks "$keystore" --ks-key-alias "$alias" --ks-pass "pass:$storepass" --key-pass "pass:$keypass" --out "$output" "$aligned"
           "$tools/apksigner" verify --verbose "$output"
           unzip -tqq "$output"

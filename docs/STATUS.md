@@ -1,4 +1,12 @@
-# Implementation status (2026-11-09)
+# Implementation status
+
+## November 13, 2026 — v0.4.0 Projects
+
+- The repository navigator has a Projects section on desktop and in the Android drawer, with a direct Projects button on narrow screens.
+- Create, open, rename and remove named collections, and add or remove accessible repositories using a searchable picker. Collections persist on the current device, independently per GitHub account. They do not create or change GitHub Projects or remote repositories.
+- Stable repository IDs keep membership attached across renames. Missing repositories remain listed and can be removed from the collection.
+
+## Initial implementation (November 9, 2026)
 
 This document distinguishes implemented source from verified builds. Do not describe untested functions as production-ready.
 
